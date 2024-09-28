@@ -10,11 +10,84 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+model User {
+    id        String  @id @default(cuid())
+    firstName String  @map("first_name") @db.VarChar(100)
+    lastName  String  @map("last_name") @db.VarChar(100)
+    username  String  @unique @db.VarChar(100)
+    email     String  @unique
+    password  String  @db.VarChar(100)
+    image     String? @db.VarChar(255)
+    bio       String? @db.Text
 
-    @@index([name])
+    sessions Session[]
+    posts    Post[]
+    comments Comment[]
+    Reply    Reply[]
+
+    @@map("users")
+}
+
+model Session {
+    id        String   @id
+    userId    String   @map("user_id")
+    expiresAt DateTime @map("expires_at")
+
+    user User @relation(references: [id], fields: [userId], onDelete: Cascade)
+
+    @@map("sessions")
+}
+
+model Post {
+    id         Int     @id @default(autoincrement())
+    post       String  @db.Text
+    isPublic   Boolean @default(false) @map("is_public")
+    isArchived Boolean @default(false) @map("is_archived")
+
+    deletedAt DateTime? @map("deleted_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    authorId String    @map("author_id")
+    author   User      @relation(fields: [authorId], references: [id])
+    comments Comment[]
+    Reply    Reply[]
+
+    @@index([post])
+    @@map("posts")
+}
+
+model Comment {
+    id      Int    @id @default(autoincrement())
+    comment String @db.Text
+
+    deletedAt DateTime? @map("deleted_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    postId   Int     @map("post_id")
+    post     Post    @relation(fields: [postId], references: [id])
+    authorId String  @map("author_id")
+    author   User    @relation(fields: [authorId], references: [id])
+    Reply    Reply[]
+
+    @@map("comments")
+}
+
+model Reply {
+    id    Int    @id @default(autoincrement())
+    reply String @db.Text
+
+    deletedAt DateTime? @map("deleted_at")
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+
+    postId    Int     @map("post_id")
+    post      Post    @relation(fields: [postId], references: [id])
+    commentId Int     @map("comment_id")
+    comment   Comment @relation(fields: [commentId], references: [id])
+    authorId  String  @map("author_id")
+    author    User    @relation(fields: [authorId], references: [id])
+
+    @@map("replies")
 }
